@@ -1,0 +1,18 @@
+replicaCount: 1
+replicas: 1
+
+resources:
+  limits:
+    cpu: "750m"
+    memory: "1024Mi"
+  requests:
+    cpu: "500m"
+    memory: "512Mi"
+
+esJavaOpts: "-Xmx512m -Xms512m"
+
+volumeClaimTemplate:
+  accessModes: [ "ReadWriteOnce" ]
+  resources:
+    requests:
+      storage: 5Gi

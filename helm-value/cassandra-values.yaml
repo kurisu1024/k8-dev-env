@@ -1,0 +1,18 @@
+replicaCount: 1
+
+image:
+  registry: docker.io
+  repository: bitnami/cassandra
+  tag: latest
+
+jvm:
+  maxHeapSize: 1024M
+  newHeapSize: 100M
+
+resources:
+  limits:
+    cpu: "500m"
+    memory: "3072Mi"
+  requests:
+    cpu: "200m"
+    memory: "2048Mi"
