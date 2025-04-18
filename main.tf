@@ -11,16 +11,6 @@ terraform {
   }
 }
 
-provider "kubernetes" {
-  config_path = "~/.kube/config"
-}
-
-provider "helm" {
-  kubernetes {
-    config_path = "~/.kube/config"
-  }
-}
-
 # -------------------------
 # NAMESPACES
 # -------------------------
@@ -56,8 +46,9 @@ resource "helm_release" "mongodb" {
   repository = "https://charts.bitnami.com/bitnami"
   chart      = "mongodb"
   version    = "13.6.4"
+  count = local.mongodb_count
   namespace  = kubernetes_namespace.data.metadata[0].name
-  values     = [file("${path.module}/helm-value/mongodb-values.yaml")]
+  values     = [file("${path.module}/helm-values/${local.kube_context}/mongodb-values.yaml")]
 }
 
 resource "helm_release" "redis" {
@@ -66,8 +57,8 @@ resource "helm_release" "redis" {
   chart      = "redis"
   namespace  = kubernetes_namespace.data.metadata[0].name
   version = "17.11.3"
-
-  values = [file("${path.module}/helm-value/redis-values.yaml")]
+  count = local.redis_count
+  values = [file("${path.module}/helm-values/${local.kube_context}/redis-values.yaml")]
 }
 
 resource "helm_release" "postgresql" {
@@ -76,7 +67,8 @@ resource "helm_release" "postgresql" {
   chart      = "postgresql"
   namespace  = kubernetes_namespace.data.metadata[0].name
   version = "12.5.6"
-  values = [file("${path.module}/helm-value/postgresql-values.yaml")]
+  count = local.postgres_count
+  values = [file("${path.module}/helm-values/${local.kube_context}/postgresql-values.yaml")]
 }
 
 resource "helm_release" "cassandra" {
@@ -85,7 +77,8 @@ resource "helm_release" "cassandra" {
   chart      = "cassandra"
   namespace  = kubernetes_namespace.data.metadata[0].name
   version = "9.2.2"
-  values = [file("${path.module}/helm-value/cassandra-values.yaml")]
+  count = local.cassandra_count
+  values = [file("${path.module}/helm-values/${local.kube_context}/cassandra-values.yaml")]
 }
 
 # -------------------------
@@ -98,7 +91,7 @@ resource "helm_release" "kube_prometheus_stack" {
   namespace  = kubernetes_namespace.monitoring.metadata[0].name
   timeout    = 600
   version    = "45.6.0"
-  values = [file("${path.module}/helm-value/kube-prometheus-stack-values.yaml")]
+  values = [file("${path.module}/helm-values/${local.kube_context}/kube-prometheus-stack-values.yaml")]
 }
 
 data "kubernetes_secret" "grafana" {
@@ -119,7 +112,7 @@ resource "helm_release" "elasticsearch" {
   version    = "7.17.3"
 
   # Optional custom values file
-  values = [file("${path.module}/helm-value/elasticsearch-values.yaml")]
+  values = [file("${path.module}/helm-values/${local.kube_context}/elasticsearch-values.yaml")]
 }
 
 resource "helm_release" "kibana" {
@@ -128,7 +121,7 @@ resource "helm_release" "kibana" {
   chart      = "kibana"
   namespace  = kubernetes_namespace.logging.metadata[0].name
   version = "7.17.3"
-  values = [file("${path.module}/helm-value/kibana-values.yaml")]
+  values = [file("${path.module}/helm-values/${local.kube_context}/kibana-values.yaml")]
 
 }
 
@@ -137,7 +130,7 @@ resource "helm_release" "fluent_bit" {
   repository = "https://fluent.github.io/helm-charts"
   chart      = "fluent-bit"
   namespace  = kubernetes_namespace.logging.metadata[0].name
-  values = [file("${path.module}/helm-value/fluent-bit-values.yaml")]
+  values = [file("${path.module}/helm-values/${local.kube_context}/fluent-bit-values.yaml")]
 }
 
 resource "helm_release" "nginx" {
@@ -147,7 +140,7 @@ resource "helm_release" "nginx" {
   version    = "15.5.2"  # ✅ known valid version
   namespace  = kubernetes_namespace.apps.metadata[0].name
 
-  values = [file("${path.module}/helm-value/nginx-values.yaml")]
+  values = [file("${path.module}/helm-values/${local.kube_context}/nginx-values.yaml")]
 }
 
 

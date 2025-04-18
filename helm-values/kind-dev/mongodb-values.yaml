@@ -1,0 +1,17 @@
+replicaCount: 1
+replicaSet:
+  enabled: true
+
+image:
+  registry: docker.io
+  repository: zcube/bitnami-compat-mongodb
+  tag: latest # Use a tag that includes ARM64 support
+  pullPolicy: IfNotPresent
+
+resources:
+  limits:
+    cpu: "500m"
+    memory: "512Mi"
+  requests:
+    cpu: "250m"
+    memory: "256Mi"
