@@ -1,17 +1,131 @@
-replicaCount: 1
-replicaSet:
-  enabled: true
+# Architecture configuration
+architecture: standalone
 
+# Image configuration
 image:
   registry: docker.io
   repository: zcube/bitnami-compat-mongodb
-  tag: latest # Use a tag that includes ARM64 support
+  tag: latest  # ARM64 compatible version
   pullPolicy: IfNotPresent
+
 
 resources:
   limits:
+    memory: "1Gi"
     cpu: "500m"
-    memory: "512Mi"
   requests:
+    memory: "512Mi"
     cpu: "250m"
-    memory: "256Mi"
+
+primary:
+  resources:
+    limits:
+      memory: "1Gi"
+      cpu: "500m"
+    requests:
+      memory: "512Mi"
+      cpu: "250m"
+
+  persistence:
+    enabled: true
+    size: "2Gi"
+    storageClass: "hostpath"
+    accessModes:
+      - ReadWriteOnce
+    mountPermissions: true
+
+  # Pod Security Context - using Bitnami compatible user/group IDs
+  podSecurityContext:
+    enabled: true
+    fsGroup: 1001
+    runAsUser: 1001
+    runAsGroup: 1001
+
+  containerSecurityContext:
+    enabled: true
+    runAsUser: 1001
+    runAsNonRoot: true
+    allowPrivilegeEscalation: false
+  
+  # Service configuration
+  service:
+    type: ClusterIP
+    port: 27017
+  
+  initContainers:
+    - name: volume-permissions
+      image: "bitnami/bitnami-shell:11"
+      command:
+        - sh
+        - -c
+        - |
+          mkdir -p /bitnami/mongodb/data
+          chmod -R 775 /bitnami/mongodb
+          chown -R 1001:1001 /bitnami/mongodb
+      volumeMounts:
+        - name: data
+          mountPath: /bitnami/mongodb
+      securityContext:
+        runAsUser: 0
+        runAsGroup: 0
+
+  # Health checks
+  livenessProbe:
+    enabled: true
+    initialDelaySeconds: 30
+    periodSeconds: 10
+    timeoutSeconds: 5
+    failureThreshold: 6
+    successThreshold: 1
+
+  readinessProbe:
+    enabled: true
+    initialDelaySeconds: 5
+    periodSeconds: 10
+    timeoutSeconds: 5
+    failureThreshold: 6
+    successThreshold: 1
+
+# MongoDB configuration
+commonAnnotations: {}
+commonLabels: {}
+
+# Metrics configuration
+metrics:
+  enabled: ${metrics_enabled}
+  serviceMonitor:
+    enabled: ${metrics_enabled}
+    additionalLabels:
+      release: prometheus
+      environment: development
+    interval: 30s
+  resources:
+    limits:
+      cpu: 100m
+      memory: 128Mi
+    requests:
+      cpu: 50m
+      memory: 64Mi
+
+# MongoDB configuration
+arbiter:
+  enabled: false
+
+# Disable replication for local development
+replicaCount: 1
+
+# MongoDB settings
+mongodbSettings:
+  systemLog:
+    verbosity: 0
+  operationProfiling:
+    mode: "slowOp"
+    slowOpThresholdMs: 100
+
+# Extra initialization scripts
+initdbScripts: {}
+
+updateStrategy:
+  type: RollingUpdate
+  rollingUpdate:
+    partition: 0

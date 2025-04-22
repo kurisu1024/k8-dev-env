@@ -1,5 +1,12 @@
-replicaCount: 1
+# Main Grafana configuration
 grafana:
+  enabled: true
+  admin:
+    existingSecret: ""
+    userKey: admin-user
+    passwordKey: admin-password
+
+  # Main Grafana resource limits
   resources:
     limits:
       cpu: "400m"
@@ -8,21 +15,43 @@ grafana:
       cpu: "200m"
       memory: "200Mi"
 
-prometheus:
-  resources:
-    limits:
-      cpu: "500m"
-      memory: "512Mi"
-    requests:
-      cpu: "250m"
-      memory: "256Mi"
+  persistence:
+    type: pvc
+    enabled: true
+    size: 1Gi
 
-alertmanager:
-  enabled: false
-#  resources:
-#    limits:
-#      cpu: "300m"
-#      memory: "256Mi"
-#    requests:
-#      cpu: "150m"
-#      memory: "128Mi"
+  # Sidecar configurations
+  sidecar:
+    datasources:
+      enabled: true
+      label: grafana_datasource
+      labelValue: "1"
+      resources:        # Move resources here
+        limits:
+          cpu: "100m"
+          memory: "128Mi"
+        requests:
+          cpu: "50m"
+          memory: "64Mi"
+      searchNamespace: ALL
+      skipTlsVerify: true
+      defaultDatasourceEnabled: true
+      searchIndexInterval: 5m
+
+    dashboards:
+      enabled: true
+      label: grafana_dashboard
+      labelValue: "1"
+      resources:        # Move resources here
+        limits:
+          cpu: "100m"
+          memory: "256Mi"
+        requests:
+          cpu: "50m"
+          memory: "128Mi"
+      searchNamespace: ALL
+
+metrics:
+  enabled: true
+  serviceMonitor:
+    enabled: true

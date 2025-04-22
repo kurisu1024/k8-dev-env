@@ -1,8 +1,59 @@
-replicaCount: 1
+# Image configuration
+image:
+  repository: "docker.elastic.co/kibana/kibana"
+  tag: "7.17.3"  # Match your Elasticsearch version
+  pullPolicy: IfNotPresent
+
+# Elasticsearch connection
+elasticsearchHosts: "http://elasticsearch-master:9200"
+
+# Resources configuration
 resources:
-  limits:
-    cpu: "400m"
-    memory: "512Mi"
   requests:
-    cpu: "200m"
-    memory: "256Mi"
+    cpu: "250m"
+    memory: "512Mi"
+  limits:
+    cpu: "1000m"
+    memory: "1Gi"
+
+# Service configuration
+service:
+  type: ClusterIP
+  port: 5601
+  nodePort: ""
+  labels: {}
+  annotations: {}
+
+# Health check configuration
+healthCheckPath: "/app/kibana"
+readinessProbe:
+  initialDelaySeconds: 10
+  periodSeconds: 10
+  timeoutSeconds: 5
+  failureThreshold: 3
+  successThreshold: 1
+
+livenessProbe:
+  initialDelaySeconds: 20
+  periodSeconds: 10
+  timeoutSeconds: 5
+  failureThreshold: 3
+  successThreshold: 1
+
+# Security context
+podSecurityContext:
+  fsGroup: 1000
+
+securityContext:
+  capabilities:
+    drop:
+      - ALL
+  runAsNonRoot: true
+  runAsUser: 1000
+
+# Kibana configuration
+kibanaConfig:
+  kibana.yml: |
+    server.name: kibana
+    server.host: "0.0.0.0"
+    elasticsearch.hosts: ["http://elasticsearch-

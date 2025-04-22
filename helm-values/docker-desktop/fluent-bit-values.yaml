@@ -1,4 +1,10 @@
-replicaCount: 1
+# Image configuration
+image:
+  repository: fluent/fluent-bit
+  pullPolicy: IfNotPresent
+  tag: "2.2.0"  # Using stable version
+
+# Resource configuration
 resources:
   limits:
     cpu: "200m"
@@ -6,3 +12,124 @@ resources:
   requests:
     cpu: "100m"
     memory: "128Mi"
+
+# Pod Security Context
+podSecurityContext:
+  fsGroup: 1001
+
+# Container Security Context
+securityContext:
+  allowPrivilegeEscalation: false
+  capabilities:
+    drop: ["ALL"]
+  readOnlyRootFilesystem: true
+
+# Service configuration
+service:
+  type: ClusterIP
+  port: 2020
+
+# Service Monitor for Prometheus integration
+serviceMonitor:
+  enabled: true
+  namespace: monitoring
+  interval: 30s
+
+# Health check probes
+livenessProbe:
+  httpGet:
+    path: /
+    port: http
+  initialDelaySeconds: 10
+  periodSeconds: 30
+  timeoutSeconds: 5
+  failureThreshold: 3
+
+readinessProbe:
+  httpGet:
+    path: /api/v1/health
+    port: http
+  initialDelaySeconds: 5
+  periodSeconds: 10
+  timeoutSeconds: 2
+
+# Fluent Bit configuration
+config:
+  service: |
+    [SERVICE]
+        Daemon Off
+        Flush 1
+        Log_Level info
+        Parsers_File parsers.conf
+        HTTP_Server On
+        HTTP_Listen 0.0.0.0
+        HTTP_Port 2020
+
+  inputs: |
+    [INPUT]
+        Name tail
+        Path /var/log/containers/*.log
+        Parser docker
+        Tag kube.*
+        Mem_Buf_Limit 5MB
+        Skip_Long_Lines On
+
+  filters: |
+    [FILTER]
+        Name kubernetes
+        Match kube.*
+        Merge_Log On
+        Keep_Log Off
+        K8S-Logging.Parser On
+        K8S-Logging.Exclude On
+
+  outputs: |
+    [OUTPUT]
+        Name es
+        Match kube.*
+        Host elasticsearch-master
+        Port 9200
+        Index fluent-bit
+        Type _doc
+        Suppress_Type_Name On
+        Retry_Limit 3
+        Replace_Dots On
+
+  parsers: |
+    [PARSER]
+        Name docker
+        Format json
+        Time_Key time
+        Time_Format %Y-%m-%dT%H:%M:%S.%L
+        Time_Keep On
+
+# Tolerations and node affinity
+tolerations: []
+nodeSelector: {}
+affinity: {}
+
+# Volume configuration
+volumes:
+  - name: varlog
+    hostPath:
+      path: /var/log
+  - name: varlibdockercontainers
+    hostPath:
+      path: /var/lib/docker/containers
+
+volumeMounts:
+  - name: varlog
+    mountPath: /var/log
+  - name: varlibdockercontainers
+    mountPath: /var/lib/docker/containers
+    readOnly: true
+
+# Metrics configuration
+metrics:
+  enabled: true
+  serviceMonitor:
+    enabled: true
+
+# Extra configurations
+extraVolumeMounts: []
+extraVolumes: []

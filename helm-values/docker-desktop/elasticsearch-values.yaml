@@ -1,18 +1,95 @@
-replicaCount: 1
+# Single node configuration for local development
+clusterName: "elasticsearch-local"
+nodeGroup: "master"
+
+# Basic deployment settings
 replicas: 1
+minimumMasterNodes: 1
 
+# Resource configuration
 resources:
-  limits:
-    cpu: "750m"
-    memory: "1024Mi"
   requests:
-    cpu: "500m"
+    cpu: "250m"
     memory: "512Mi"
+  limits:
+    cpu: "1000m"
+    memory: "1Gi"
 
-esJavaOpts: "-Xmx512m -Xms512m"
+# Storage configuration
+persistence:
+  enabled: true
+  size: "2Gi"
+  storageClass: "hostpath"  # Docker Desktop default storage class
 
-volumeClaimTemplate:
-  accessModes: [ "ReadWriteOnce" ]
-  resources:
-    requests:
-      storage: 5Gi
+# Network settings
+protocol: http
+httpPort: 9200
+transportPort: 9300
+service:
+  type: ClusterIP
+  httpPort: 9200
+  transportPort: 9300
+
+# Environment settings
+esConfig:
+  elasticsearch.yml: |
+    network.host: 0.0.0.0
+    discovery.type: single-node
+    xpack.security.enabled: false
+    xpack.monitoring.enabled: true
+
+# Java options
+esJavaOpts: "-Xms512m -Xmx512m"
+
+# Security settings (disabled for local dev)
+antiAffinity: "soft"
+security:
+  enabled: false
+
+# Health check settings
+readinessProbe:
+  initialDelaySeconds: 30
+  periodSeconds: 10
+  timeoutSeconds: 5
+  successThreshold: 1
+  failureThreshold: 3
+
+livenessProbe:
+  initialDelaySeconds: 40
+  periodSeconds: 20
+  timeoutSeconds: 5
+  failureThreshold: 3
+
+# Pod security context
+podSecurityContext:
+  fsGroup: 1000
+  runAsUser: 1000
+
+# Container security context
+securityContext:
+  capabilities:
+    drop:
+      - ALL
+  runAsNonRoot: true
+  runAsUser: 1000
+
+# Ingress (disabled by default for local dev)
+ingress:
+  enabled: false
+
+# Metrics for monitoring (enabled for local monitoring)
+metrics:
+  enabled: true
+  service:
+    annotations:
+      prometheus.io/scrape: "true"
+      prometheus.io/port: "9114"
+
+# Node affinity (disabled for local dev)
+nodeSelector: {}
+tolerations: []
+
+# Extra configurations
+extraEnvs: []
+extraVolumes: []
+extraVolumeMounts: []

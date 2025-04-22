@@ -9,4 +9,5 @@ for default behavior.
 
 #### TODO
 - Configs
+  - Make passwords configurable env included in gitignore
 - Make sure kind-dev helm-vars works with kind k8 env

@@ -1,10 +1,113 @@
-replicaCount: 1
-architecture: standalone
+# Architecture configuration
+architecture: standalone  # Use standalone for local dev instead of replication
 
-resources:
-  limits:
-    cpu: "500m"
-    memory: "512Mi"
-  requests:
-    cpu: "250m"
-    memory: "256Mi"
+# Image configuration
+image:
+  registry: docker.io
+  repository: bitnami/redis
+  tag: "7.2.4"  # Latest stable version
+  pullPolicy: IfNotPresent
+
+# Authentication
+auth:
+  enabled: true
+  password: "redis"  # Local dev password
+
+# Master configuration (standalone mode)
+master:
+  resources:
+    limits:
+      memory: "256Mi"  # Reduced from 5GB
+      cpu: "200m"
+    requests:
+      memory: "128Mi"
+      cpu: "100m"
+
+  # Redis configuration
+  configuration: |
+    maxmemory 200mb
+    maxmemory-policy allkeys-lru
+    save 900 1
+    save 300 10
+    save 60 10000
+    appendonly yes
+    appendfsync everysec
+
+  # Persistence configuration
+  persistence:
+    enabled: true
+    size: "1Gi"
+    storageClass: "hostpath"  # Docker Desktop default
+
+  # Service configuration
+  service:
+    type: ClusterIP
+    port: 6379
+
+  # Pod security context
+  podSecurityContext:
+    enabled: true
+    fsGroup: 1001
+  containerSecurityContext:
+    enabled: true
+    runAsUser: 1001
+    runAsNonRoot: true
+
+  # Health check probes
+  livenessProbe:
+    enabled: true
+    initialDelaySeconds: 5
+    periodSeconds: 5
+    timeoutSeconds: 2
+    failureThreshold: 3
+    successThreshold: 1
+  
+  readinessProbe:
+    enabled: true
+    initialDelaySeconds: 5
+    periodSeconds: 5
+    timeoutSeconds: 2
+    failureThreshold: 3
+    successThreshold: 1
+
+# Disable replica for local development
+replica:
+  replicaCount: 0
+
+# Metrics configuration
+metrics:
+  enabled: true
+  serviceMonitor:
+    enabled: true
+    interval: 30s
+  resources:
+    limits:
+      memory: "64Mi"
+      cpu: "50m"
+    requests:
+      memory: "32Mi"
+      cpu: "25m"
+
+# Disable TLS for local development
+tls:
+  enabled: false
+
+# Common configurations
+commonConfiguration: |
+  # Maximum number of clients
+  maxclients 100
+  # Disable dangerous commands in local
+  rename-command FLUSHALL ""
+  rename-command FLUSHDB ""
+  # Set reasonable client output/input buffers
+  client-output-buffer-limit normal 64mb 32mb 60
+  client-output-buffer-limit slave 128mb 64mb 60
+  client-output-buffer-limit pubsub 32mb 8mb 60
+
+# Disable cluster
+cluster:
+  enabled: false
+
+# Network policy (disabled for local dev)
+networkPolicy:
+  enabled: false
